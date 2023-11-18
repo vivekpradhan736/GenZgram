@@ -70,7 +70,7 @@ const Profile = () => {
                 {currentUser.bio}
               </p> */}
             <div className="mt-7 max-w-screen-sm">
-              {currentUser.bio.split('\n').map((paragraph: string, index: number) => (
+              {currentUser?.bio?.split('\n').map((paragraph: string, index: number) => (
                 <p key={index} className="small-medium md:base-medium text-center xl:text-left">
                   {paragraph}
                 </p>
