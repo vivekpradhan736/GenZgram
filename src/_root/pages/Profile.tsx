@@ -12,6 +12,7 @@ import { LikedPosts } from "@/_root/pages";
 import { useUserContext } from "@/context/AuthContext";
 import { useGetUserById } from "@/lib/react-query/queries";
 import { GridPostList, Loader } from "@/components/shared";
+import { useEffect, useState, useRef } from "react";
 
 interface StabBlockProps {
   value: string | number;
@@ -29,6 +30,36 @@ const Profile = () => {
   const { id } = useParams();
   const { user } = useUserContext();
   const { pathname } = useLocation();
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+
+  //  ----->> This code are work for Showing the User Profile Picture <<-----
+
+  // Event handler to hide the modal when clicking outside of it
+  const handleOutsideClick = (event: MouseEvent) => {
+    if (modalVisible && modalRef.current && event.target === modalRef.current) {
+      hideModal();
+    }
+  };
+  // Attach the event listener to the window when the component mounts
+  useEffect(() => {
+    window.addEventListener('click', handleOutsideClick);
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('click', handleOutsideClick);
+    };
+  }, [modalVisible]);
+
+  // Function to show the modal
+  const showModal = () => {
+    setModalVisible(true);
+  };
+
+  // Function to hide the modal
+  const hideModal = () => {
+    setModalVisible(false);
+  };
+
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const { data: currentUser } = useGetUserById(id || "");
 
@@ -39,6 +70,7 @@ const Profile = () => {
       </div>
     );
 
+
   return (
     <div className="profile-container">
       <div className="profile-inner_container">
@@ -48,8 +80,25 @@ const Profile = () => {
               currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"
             }
             alt="profile"
-            className="w-28 h-28 lg:mt-10 lg:h-36 lg:w-36 rounded-full"
+            onClick={showModal}
+            className="w-28 h-28 lg:mt-10 lg:h-36 lg:w-36 rounded-full hover:cursor-pointer"
           />
+
+          {/* <!-- The Modal --> */}
+          {modalVisible && (
+            <div ref={modalRef} id="myModal" className="modal fixed z-30 pt-[100px] left-0 top-0 w-full h-full overflow-auto bg-[rgb(0,0,0)] bg-[rgba(0,0,0,0.6)] ">
+
+              {/* <!-- Modal content --> */}
+              <div className="modal-content bg-[#000000] m-auto p-[10px] w-[20%] rounded-2xl shadow-xl shadow-[#343333] ">
+                <span onClick={hideModal} className="close text-[#aaaaaa] float-right text-3xl font-bold hover:text-[#fff] hover:no-underline hover:cursor-pointer ">&times;</span>
+                <img src={
+                  currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"
+                } alt="profile" className="rounded-2xl" />
+              </div>
+
+            </div>
+          )}
+
           <div className="flex flex-col flex-1 justify-between md:mt-2">
             <div className="flex flex-col w-full">
               <h1 className="text-center xl:text-left h3-bold md:h1-semibold w-full">
