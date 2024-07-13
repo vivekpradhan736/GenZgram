@@ -8,20 +8,31 @@ import {
   useGetPostById,
   useGetUserPosts,
   useDeletePost,
+  useGetCommentById,
 } from "@/lib/react-query/queries";
 import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
+import Comment from "@/components/shared/Comment";
+import { useEffect, useMemo, useState } from "react";
+import { Models } from "appwrite";
 
 const PostDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useUserContext();
 
-  const { data: post, isLoading } = useGetPostById(id);
+  const { data: post, isLoading: isPostLoading } = useGetPostById(id);
+  const commentList = useMemo(() => {
+    return post ? post.comments.map((comments: Models.Document) => comments) : [];
+  }, [post]);
+  console.log("commentList", commentList)
+  const [commentName, setCommentName] = useState<string[]>(commentList);
+  const { data: comment, refetch: refetchComment, isLoading: isPostCommentLoading } = useGetCommentById(id)
   const { data: userPosts, isLoading: isUserPostLoading } = useGetUserPosts(
     post?.creator.$id
   );
   const { mutate: deletePost } = useDeletePost();
+  console.log("post", comment)
 
   const relatedPosts = userPosts?.documents.filter(
     (userPost) => userPost.$id !== id
@@ -31,6 +42,18 @@ const PostDetails = () => {
     deletePost({ postId: id, imageId: post?.imageId });
     navigate(-1);
   };
+  useEffect(() => {
+    if (comment) {
+      console.log("comment", comment)
+      const commentNames = comment?.documents.map((doc: Models.Document) => doc);
+      console.log("commentNames", commentNames)
+      setCommentName(commentNames);
+    } else {
+      setCommentName(commentList);
+    }
+  }, [comment, commentList]);
+  console.log("commentName", commentName)
+
 
   return (
     <div className="post_details-container">
@@ -49,7 +72,7 @@ const PostDetails = () => {
         </Button>
       </div>
 
-      {isLoading || !post ? (
+      {isPostLoading || !post ? (
         <Loader />
       ) : (
         <div className="post_details-card">
@@ -70,6 +93,8 @@ const PostDetails = () => {
                     "/assets/icons/profile-placeholder.svg"
                   }
                   alt="creator"
+                  width={24}
+                  height={24}
                   className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
                 />
                 <div className="flex gap-1 flex-col">
@@ -103,9 +128,8 @@ const PostDetails = () => {
                 <Button
                   onClick={handleDeletePost}
                   variant="ghost"
-                  className={`ost_details-delete_btn ${
-                    user.id !== post?.creator.$id && "hidden"
-                  }`}>
+                  className={`ost_details-delete_btn ${user.id !== post?.creator.$id && "hidden"
+                    }`}>
                   <img
                     src={"/assets/icons/delete.svg"}
                     alt="delete"
@@ -118,22 +142,81 @@ const PostDetails = () => {
 
             <hr className="border w-full border-dark-4/80" />
 
-            <div className="flex flex-col flex-1 w-full small-medium lg:base-regular">
-              <p>{post?.caption}</p>
-              <ul className="flex gap-1 mt-2">
-                {post?.tags.map((tag: string, index: string) => (
-                  <li
-                    key={`${tag}${index}`}
-                    className="text-light-3 small-regular">
-                    #{tag}
-                  </li>
-                ))}
-              </ul>
+            <div className="y-scroll overflow-y-scroll h-96">
+              <div className="flex gap-3">
+                <Link to={`/profile/${post?.creator.$id}`}>
+                  <img
+                    src={
+                      post?.creator.imageUrl ||
+                      "/assets/icons/profile-placeholder.svg"
+                    }
+                    alt="creator"
+                    className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
+                  />
+                </Link>
+
+                <div className="flex flex-col flex-1 py-1 w-full text-[14px] font-medium leading-[140%] lg:text-[14.5px] lg:font-normal">
+                  <Link
+                    to={`/profile/${post?.creator.$id}`}>
+                    <span className="text-[17px] font-semibold hover:text-[#b6b6b6] cursor-pointer inline hover:underline ">{post?.creator.name}</span>
+                  </Link>
+                  <span>
+                    {post?.caption?.split('\n').map((paragraph: string, index: number) => (
+                      <span key={index} className="block text-[#e0dbdb]" >
+                        {paragraph}
+                      </span>
+                    ))}
+                  </span>
+                  <ul className="flex flex-wrap gap-1 mt-2">
+                    {post?.tags.map((tag: string, index: string) => (
+                      <li
+                        key={`${tag}${index}`}
+                        className="text-light-3 small-regular cursor-pointer hover:underline">
+                        #{tag}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              {isPostCommentLoading ? (<Loader />) :
+                (commentName?.map((comments: any, index: number) => (
+                  <div className="flex gap-3 pt-5" key={`${comments}${index}`}>
+                    <Link to={`/profile/${comments?.users?.$id}`}>
+                      <img
+                        src={
+                          comments?.users?.imageUrl ||
+                          "/assets/icons/profile-placeholder.svg"
+                        }
+                        alt="creator"
+                        width={30}
+                        height={30}
+                        className="w-9 h-8 lg:w-14 lg:h-12 rounded-full"
+                      />
+                    </Link>
+                    <div className="py-2 w-full">
+                      <div className=" text-[14px] font-medium leading-[140%] lg:text-[14.5px] lg:font-normal">
+                        <Link to={`/profile/${comments?.users?.$id}`}>
+                          <span className="text-[17px] font-semibold hover:text-[#b6b6b6] cursor-pointer inline hover:underline ">{comments?.users?.name}</span>
+                        </Link>
+                        <span className="pl-2">{comments?.comment}</span>
+                      </div>
+                      <p className="subtle-semibold font-medium text-[#848484] ">
+                        {multiFormatDateString(comments?.$createdAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                ))
+                )}
             </div>
+
+            <hr className="border w-full border-dark-4/80" />
 
             <div className="w-full">
               <PostStats post={post} userId={user.id} />
             </div>
+            <hr className="border w-full border-dark-4/80" />
+            <Comment post={post} user={user} refetchComment={refetchComment} />
           </div>
         </div>
       )}

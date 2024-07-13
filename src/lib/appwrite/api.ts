@@ -1,7 +1,124 @@
 import { ID, Query } from "appwrite";
 
 import { appwriteConfig, account, databases, storage, avatars } from "./config";
-import { IUpdatePost, INewPost, INewUser, IUpdateUser } from "@/types";
+import { IUpdatePost, INewPost, INewUser, IUpdateUser, INewComment } from "@/types";
+
+// ============================== GET FOLLOWING BY USER ID
+export async function getFollowingByUserId(userId: string) {
+  try {
+    const currentAccount = await getCurrentUser();
+    const user = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.followingCollectionId,
+      [Query.equal("toUsers", userId)]
+    );
+    console.log("user-user",user)
+
+    const followingUsers = user?.documents.filter(
+      (followedUser) => followedUser.byUser.$id === currentAccount?.$id
+    );
+    console.log("followingUsers",followingUsers)
+
+
+    if (!followingUsers) throw Error;
+
+    return followingUsers;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// ============================== GET POST COMMENT BY ID
+export async function getPostCommentById(postId?: string) {
+  if (!postId) throw Error;
+
+  try {
+    const post = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.commentsCollectionId,
+      [Query.equal("posts", postId)]
+    );
+
+    if (!post) throw Error;
+
+    return post;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// ============================== GET CURRENT USER WITH FOLLOWING
+export async function getCurrentUserWithFollowing() {
+  try {
+    const currentAccount = await getCurrentUser();
+
+    if (!currentAccount) throw Error;
+
+    // Get the list of users the current user is following
+    const following = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.followingCollectionId,
+      [Query.equal("byUser", currentAccount.$id)]
+    );
+
+    if (!following) throw Error;
+
+    return {
+      following: following.documents.map((followedUser) => followedUser.toUsers.$id),
+    };
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+// ============================== FOLLOW USER
+export async function followUser(userId: string, currentUserId: string) {
+  try {
+    
+    const result = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.followingCollectionId,
+      ID.unique(),
+      {
+        toUsers: userId,
+        byUser: currentUserId,
+        // ... (other fields you might need)
+      }
+    );
+
+    if (!result) throw Error;
+
+    return result;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// ============================== UNFOLLOW USER
+export async function unfollowUser(userId: string) {
+  try {
+    const userFollowingCollection = await getFollowingByUserId(userId);
+    console.log("userFollowingCollection",userFollowingCollection)
+
+    if (userFollowingCollection && userFollowingCollection.length > 0) {
+      // Assuming userId is the document ID to be deleted from the following collection
+      const result = await databases.deleteDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.followingCollectionId,
+        userFollowingCollection[0].$id
+      );
+
+      if (!result) throw Error;
+
+      return userFollowingCollection;
+    } else {
+      console.log('No following user found for the given userId.');
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
 
 // ============================================================
 // AUTH
@@ -241,6 +358,28 @@ export async function getInfinitePosts({ pageParam }: { pageParam: number }) {
     if (!posts) throw Error;
 
     return posts;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// ============================== CREATE COMMENT
+export async function createComment(comment: INewComment) {
+  try {
+    const newComment = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.commentsCollectionId,
+      ID.unique(),
+      {
+        users: comment.userId,
+        posts: comment.postId,
+        comment: comment.text,
+      }
+    );
+
+    if (!newComment) throw Error;
+
+    return newComment;
   } catch (error) {
     console.log(error);
   }

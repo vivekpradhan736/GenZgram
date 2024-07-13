@@ -17,4 +17,15 @@ export enum QUERY_KEYS {
   
     //  SEARCH KEYS
     SEARCH_POSTS = "getSearchPosts",
+
+    // FOLLOW KEYS
+    GET_FOLLOWERS = "getFollowers",
+    GET_FOLLOWING = "getFollowing",
+    GET_CURRENT_USER_WITH_FOLLOWING = "getCurrentUserWithFollowing",
+    GET_FOLLOWING_BY_USER_ID = "getFollowingByUserId",
+
+    // COMMENT KEYS
+    CREATE_COMMENT = "createComment",
+    GET_POST_COMMENT = "getPostComment",
+    GET_POST_COMMENT_BY_ID = "getPostCommentById"
   }

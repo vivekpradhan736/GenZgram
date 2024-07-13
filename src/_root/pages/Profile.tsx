@@ -7,12 +7,12 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { Button } from "@/components/ui";
 import { LikedPosts } from "@/_root/pages";
 import { useUserContext } from "@/context/AuthContext";
 import { useGetUserById } from "@/lib/react-query/queries";
 import { GridPostList, Loader } from "@/components/shared";
 import { useEffect, useState, useRef } from "react";
+import FollowButton from "@/components/shared/FollowButton";
 
 interface StabBlockProps {
   value: string | number;
@@ -62,6 +62,7 @@ const Profile = () => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   const { data: currentUser } = useGetUserById(id || "");
+  console.log("currentUser",currentUser)
 
   if (!currentUser)
     return (
@@ -86,10 +87,10 @@ const Profile = () => {
 
           {/* <!-- The Modal --> */}
           {modalVisible && (
-            <div ref={modalRef} id="myModal" className="modal fixed z-30 pt-[100px] left-0 top-0 w-full h-full overflow-auto bg-[rgb(0,0,0)] bg-[rgba(0,0,0,0.6)] ">
+            <div ref={modalRef} id="myModal" className="fixed z-30 pt-[100px] left-0 top-0 w-full h-full overflow-auto bg-[rgb(0,0,0)] bg-[rgba(0,0,0,0.6)] ">
 
               {/* <!-- Modal content --> */}
-              <div className="modal-content bg-[#000000] m-auto p-[10px] w-[20%] rounded-2xl shadow-xl shadow-[#343333] ">
+              <div className="bg-[#000000] m-auto p-[10px] w-[20%] rounded-2xl shadow-xl shadow-[#343333] ">
                 <span onClick={hideModal} className="close text-[#aaaaaa] float-right text-3xl font-bold hover:text-[#fff] hover:no-underline hover:cursor-pointer ">&times;</span>
                 <img src={
                   currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"
@@ -111,8 +112,8 @@ const Profile = () => {
 
             <div className="flex gap-8 mt-5 items-center justify-center xl:justify-start flex-wrap z-20">
               <StatBlock value={currentUser.posts.length} label="Posts" />
-              <StatBlock value={20} label="Followers" />
-              <StatBlock value={20} label="Following" />
+              <StatBlock value={currentUser.followers.length} label="Followers" />
+              <StatBlock value={currentUser.followings.length} label="Following" />
             </div>
 
             {/* <p className="small-medium md:base-medium text-center xl:text-left mt-7 max-w-screen-sm">
@@ -145,9 +146,10 @@ const Profile = () => {
               </Link>
             </div>
             <div className={`${user.id === id && "hidden"}`}>
-              <Button type="button" className="shad-button_primary px-8">
+            <FollowButton user={currentUser}/>
+              {/* <Button type="button" className="shad-button_primary px-8">
                 Follow
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>

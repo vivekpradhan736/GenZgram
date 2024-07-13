@@ -49,6 +49,7 @@ const FileUploader = ({ fieldChange, mediaUrl }: FileUploaderProps) => {
             width={96}
             height={77}
             alt="file upload"
+            className="w-24 h-20 object-cover"
           />
 
           <h3 className="base-medium text-light-2 mb-2 mt-6">
