@@ -15,7 +15,7 @@ import { useToast } from '../ui/use-toast.ts';
 import Lottie from "react-lottie";
 import animationData from "../../animations/typing.json";
 
-const ENDPOINT = "http://localhost:5000";
+const ENDPOINT = "https://genzgram-backend.onrender.com";
 
 interface ReceiverDetails {
     name: string;
