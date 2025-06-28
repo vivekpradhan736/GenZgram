@@ -1,10 +1,15 @@
 import { Models } from "appwrite";
 import { Link } from "react-router-dom";
 
-import { PostStats } from "@/components/shared";
+import { PostStats, ProfileCard } from "@/components/shared";
 import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
 import { useState } from "react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 
 type PostCardProps = {
   post: Models.Document;
@@ -23,8 +28,11 @@ const PostCard = ({ post }: PostCardProps) => {
     <div className="post-card">
       <div className="flex-between">
         <div className="flex items-center gap-3">
-          <Link to={`/profile/${post.creator.$id}`}>
-            <img
+          <div>
+            <HoverCard>
+      <HoverCardTrigger asChild>
+        <Link to={`/profile/${post.creator._id}`}>
+                    <img
               src={
                 post.creator?.imageUrl ||
                 "/assets/icons/profile-placeholder.svg"
@@ -32,16 +40,31 @@ const PostCard = ({ post }: PostCardProps) => {
               alt="creator"
               className="w-12 lg:h-12 rounded-full"
             />
-          </Link>
+            </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={post?.creator} />
+      </HoverCardContent>
+    </HoverCard>
+          </div>
 
-          <Link to={`/profile/${post.creator.$id}`}>
+          <div>
             <div className="flex flex-col">
-              <p className="base-medium lg:body-bold text-light-1">
+              <HoverCard>
+      <HoverCardTrigger asChild>
+        <Link to={`/profile/${post.creator._id}`}>
+                    <p className="base-medium lg:body-bold text-light-1">
                 {post.creator.name}
               </p>
+              </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={post?.creator} />
+      </HoverCardContent>
+    </HoverCard>
               <div className="flex-center gap-2 text-light-3">
                 <p className="subtle-semibold lg:small-regular ">
-                  {multiFormatDateString(post.$createdAt)}
+                  {multiFormatDateString(post.createdAt)}
                 </p>
                 •
                 <p className="subtle-semibold lg:small-regular">
@@ -49,12 +72,12 @@ const PostCard = ({ post }: PostCardProps) => {
                 </p>
               </div>
             </div>
-          </Link>
+          </div>
         </div>
 
         <Link
-          to={`/update-post/${post.$id}`}
-          className={`${user.id !== post.creator.$id && "hidden"}`}>
+          to={`/update-post/${post._id}`}
+          className={`${user.id !== post.creator._id && "hidden"}`}>
           <img
             src={"/assets/icons/edit.svg"}
             alt="edit"
@@ -68,7 +91,7 @@ const PostCard = ({ post }: PostCardProps) => {
         <p className="line-clamp-1">{post.caption}</p>
       </div>
 
-      <Link to={`/posts/${post.$id}`}>
+      <Link to={`/posts/${post._id}`}>
         <img
           src={post.imageUrl || "/assets/icons/profile-placeholder.svg"}
           alt="post image"
@@ -79,8 +102,16 @@ const PostCard = ({ post }: PostCardProps) => {
       <PostStats post={post} userId={user.id} />
 
       <div className="">
-        <div className="">
-          <span className="text-white font-bold cursor-pointer hover:underline hover:text-[#fff5f5] " >{post.creator.name}</span>  <span className="text-[14px] text-[#ebeaea] " >{showAll ? 
+        <div className=""> 
+          <HoverCard>
+      <HoverCardTrigger asChild>
+                    <span className="text-white font-bold cursor-pointer hover:underline hover:text-[#fff5f5]">{post.creator.name}</span>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={post?.creator} />
+      </HoverCardContent>
+    </HoverCard>{" "}
+          <span className="text-[14px] text-[#ebeaea] " >{showAll ? 
           // post.caption
           (post?.caption?.split('\n').map((paragraph: string, index: number) => (
             <span key={index} className="block" >
@@ -91,7 +122,7 @@ const PostCard = ({ post }: PostCardProps) => {
           {post.caption.length > 50 ? <>
           {showAll ? (
             <ul className="flex flex-wrap gap-1 mt-2 ">
-            {post.tags.map((tag: string, index: string) => (
+            {post.tags?.[0] !== "" && post.tags.map((tag: string, index: string) => (
               <li key={`${tag}${index}`} className="text-[#bfbbfa] small-regular mb-1 mr-1 cursor-pointer hover:underline ">
                 #{tag}
               </li>
@@ -105,7 +136,7 @@ const PostCard = ({ post }: PostCardProps) => {
           )}
           </> : <>
             <ul className={`flex flex-${tagShowAll ? "wrap" : ""} overflow-hidden gap-1 mt-2`}>
-            {tagMaxLength.map((tag: string, index: string) => (
+            {tagMaxLength?.[0] !== "" && tagMaxLength.map((tag: string, index: string) => (
               <li key={`${tag}${index}`} className="text-[#bfbbfa] small-regular mb-1 mr-1 cursor-pointer hover:underline ">
                 #{tag}
               </li>

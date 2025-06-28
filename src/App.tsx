@@ -18,6 +18,8 @@ import SigninForm from "./_auth/forms/SigninForm";
 import { Toaster } from "./components/ui/toaster";
 
 import "./globals.css";
+import Chatpage from "./_root/pages/ChatPage";
+import ProfilePictureForm from "./_auth/forms/ProfilePictureForm";
 
 const App = () => {
   return (
@@ -29,6 +31,7 @@ const App = () => {
           <Route path="/sign-up" element={<SignupForm />} />
         </Route>
 
+          <Route path="/upload-profile" element={<ProfilePictureForm />} />
         {/* private routes */}
         <Route element={<RootLayout />}>
           <Route index element={<Home />} />
@@ -40,6 +43,7 @@ const App = () => {
           <Route path="/posts/:id" element={<PostDetails />} />
           <Route path="/profile/:id/*" element={<Profile />} />
           <Route path="/update-profile/:id" element={<UpdateProfile />} />
+          <Route path="/chats" element={<Chatpage />} />
         </Route>
       </Routes>
 

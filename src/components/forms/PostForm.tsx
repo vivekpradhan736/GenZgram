@@ -52,7 +52,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
     if (post && action === "Update") {
       const updatedPost = await updatePost({
         ...value,
-        postId: post.$id,
+        postId: post._id,
         imageId: post.imageId,
         imageUrl: post.imageUrl,
       });
@@ -62,7 +62,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
           title: `${action} post failed. Please try again.`,
         });
       }
-      return navigate(`/posts/${post.$id}`);
+      return navigate(`/posts/${post._id}`);
     }
 
     // ACTION = CREATE

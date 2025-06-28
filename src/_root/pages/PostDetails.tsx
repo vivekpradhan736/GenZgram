@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui";
-import { Loader } from "@/components/shared";
+import { Loader, ProfileCard } from "@/components/shared";
 import { GridPostList, PostStats } from "@/components/shared";
 
 import {
@@ -15,6 +15,11 @@ import { useUserContext } from "@/context/AuthContext";
 import Comment from "@/components/shared/Comment";
 import { useEffect, useMemo, useState } from "react";
 import { Models } from "appwrite";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 
 const PostDetails = () => {
   const navigate = useNavigate();
@@ -23,19 +28,17 @@ const PostDetails = () => {
 
   const { data: post, isLoading: isPostLoading } = useGetPostById(id);
   const commentList = useMemo(() => {
-    return post ? post.comments.map((comments: Models.Document) => comments) : [];
+    return post ? post?.comments?.map((comments: Models.Document) => comments) : [];
   }, [post]);
-  console.log("commentList", commentList)
   const [commentName, setCommentName] = useState<string[]>(commentList);
   const { data: comment, refetch: refetchComment, isLoading: isPostCommentLoading } = useGetCommentById(id)
   const { data: userPosts, isLoading: isUserPostLoading } = useGetUserPosts(
-    post?.creator.$id
+    post?.creator?._id
   );
   const { mutate: deletePost } = useDeletePost();
-  console.log("post", comment)
 
   const relatedPosts = userPosts?.documents.filter(
-    (userPost) => userPost.$id !== id
+    (userPost) => userPost._id !== id
   );
 
   const handleDeletePost = () => {
@@ -44,15 +47,12 @@ const PostDetails = () => {
   };
   useEffect(() => {
     if (comment) {
-      console.log("comment", comment)
       const commentNames = comment?.documents.map((doc: Models.Document) => doc);
-      console.log("commentNames", commentNames)
       setCommentName(commentNames);
     } else {
       setCommentName(commentList);
     }
   }, [comment, commentList]);
-  console.log("commentName", commentName)
 
 
   return (
@@ -84,10 +84,11 @@ const PostDetails = () => {
 
           <div className="post_details-info">
             <div className="flex-between w-full">
-              <Link
-                to={`/profile/${post?.creator.$id}`}
-                className="flex items-center gap-3">
-                <img
+              <div className="flex items-center gap-3">
+                <HoverCard>
+      <HoverCardTrigger asChild>
+        <Link to={`/profile/${post?.creator._id}`}>
+                    <img
                   src={
                     post?.creator.imageUrl ||
                     "/assets/icons/profile-placeholder.svg"
@@ -97,13 +98,26 @@ const PostDetails = () => {
                   height={24}
                   className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
                 />
+                </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={post?.creator} />
+      </HoverCardContent>
+    </HoverCard>
                 <div className="flex gap-1 flex-col">
-                  <p className="base-medium lg:body-bold text-light-1">
+                  <HoverCard>
+      <HoverCardTrigger asChild>
+                    <p className="base-medium lg:body-bold text-light-1">
                     {post?.creator.name}
                   </p>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={post?.creator} />
+      </HoverCardContent>
+    </HoverCard>
                   <div className="flex-center gap-2 text-light-3">
                     <p className="subtle-semibold lg:small-regular ">
-                      {multiFormatDateString(post?.$createdAt)}
+                      {multiFormatDateString(post?.createdAt)}
                     </p>
                     •
                     <p className="subtle-semibold lg:small-regular">
@@ -111,12 +125,12 @@ const PostDetails = () => {
                     </p>
                   </div>
                 </div>
-              </Link>
+              </div>
 
               <div className="flex-center gap-4">
                 <Link
-                  to={`/update-post/${post?.$id}`}
-                  className={`${user.id !== post?.creator.$id && "hidden"}`}>
+                  to={`/update-post/${post?._id}`}
+                  className={`${user.id !== post?.creator._id && "hidden"}`}>
                   <img
                     src={"/assets/icons/edit.svg"}
                     alt="edit"
@@ -128,7 +142,7 @@ const PostDetails = () => {
                 <Button
                   onClick={handleDeletePost}
                   variant="ghost"
-                  className={`ost_details-delete_btn ${user.id !== post?.creator.$id && "hidden"
+                  className={`ost_details-delete_btn ${user.id !== post?.creator._id && "hidden"
                     }`}>
                   <img
                     src={"/assets/icons/delete.svg"}
@@ -142,10 +156,13 @@ const PostDetails = () => {
 
             <hr className="border w-full border-dark-4/80" />
 
-            <div className="y-scroll overflow-y-scroll h-96">
+            <div className="y-scroll overflow-y-scroll w-full h-96">
               <div className="flex gap-3">
-                <Link to={`/profile/${post?.creator.$id}`}>
-                  <img
+                <div>
+                  <HoverCard>
+      <HoverCardTrigger asChild>
+        <Link to={`/profile/${post?.creator._id}`}>
+                    <img
                     src={
                       post?.creator.imageUrl ||
                       "/assets/icons/profile-placeholder.svg"
@@ -153,13 +170,28 @@ const PostDetails = () => {
                     alt="creator"
                     className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
                   />
-                </Link>
+                  </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={post?.creator} />
+      </HoverCardContent>
+    </HoverCard>
+                </div>
 
                 <div className="flex flex-col flex-1 py-1 w-full text-[14px] font-medium leading-[140%] lg:text-[14.5px] lg:font-normal">
-                  <Link
-                    to={`/profile/${post?.creator.$id}`}>
+                  <div>
+                    <HoverCard>
+      <HoverCardTrigger asChild>
+        <Link
+                    to={`/profile/${post?.creator._id}`}>
                     <span className="text-[17px] font-semibold hover:text-[#b6b6b6] cursor-pointer inline hover:underline ">{post?.creator.name}</span>
-                  </Link>
+                    </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={post?.creator} />
+      </HoverCardContent>
+    </HoverCard>
+                  </div>
                   <span>
                     {post?.caption?.split('\n').map((paragraph: string, index: number) => (
                       <span key={index} className="block text-[#e0dbdb]" >
@@ -168,7 +200,7 @@ const PostDetails = () => {
                     ))}
                   </span>
                   <ul className="flex flex-wrap gap-1 mt-2">
-                    {post?.tags.map((tag: string, index: string) => (
+                    {post.tags?.[0] !== "" && post?.tags.map((tag: string, index: string) => (
                       <li
                         key={`${tag}${index}`}
                         className="text-light-3 small-regular cursor-pointer hover:underline">
@@ -181,8 +213,11 @@ const PostDetails = () => {
               {isPostCommentLoading ? (<Loader />) :
                 (commentName?.map((comments: any, index: number) => (
                   <div className="flex gap-3 pt-5" key={`${comments}${index}`}>
-                    <Link to={`/profile/${comments?.users?.$id}`}>
-                      <img
+                    <div>
+                    <HoverCard>
+      <HoverCardTrigger asChild>
+        <Link to={`/profile/${comments?.users?._id}`}>
+          <img
                         src={
                           comments?.users?.imageUrl ||
                           "/assets/icons/profile-placeholder.svg"
@@ -190,18 +225,35 @@ const PostDetails = () => {
                         alt="creator"
                         width={30}
                         height={30}
-                        className="w-9 h-8 lg:w-14 lg:h-12 rounded-full"
+                        className="w-9 z-10 h-8 lg:w-14 lg:h-12 rounded-full"
                       />
-                    </Link>
+                      </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={comments?.users} />
+      </HoverCardContent>
+    </HoverCard>
+                    </div>
                     <div className="py-2 w-full">
                       <div className=" text-[14px] font-medium leading-[140%] lg:text-[14.5px] lg:font-normal">
-                        <Link to={`/profile/${comments?.users?.$id}`}>
-                          <span className="text-[17px] font-semibold hover:text-[#b6b6b6] cursor-pointer inline hover:underline ">{comments?.users?.name}</span>
-                        </Link>
+                        <div className="inline">
+                          <HoverCard>
+      <HoverCardTrigger asChild>
+        <Link to={`/profile/${comments?.users?._id}`}>
+                          <span className="text-[17px] font-semibold hover:text-[#b6b6b6] cursor-pointer inline hover:underline ">
+                            {comments?.users?.name}
+                          </span>
+                          </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[23rem]">
+          <ProfileCard user={comments?.users} />
+      </HoverCardContent>
+    </HoverCard>
+                        </div>
                         <span className="pl-2">{comments?.comment}</span>
                       </div>
                       <p className="subtle-semibold font-medium text-[#848484] ">
-                        {multiFormatDateString(comments?.$createdAt)}
+                        {multiFormatDateString(comments?.createdAt)}
                       </p>
                     </div>
                   </div>

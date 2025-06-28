@@ -61,7 +61,7 @@ const SignupForm = () => {
       if (isLoggedIn) {
         form.reset();
 
-        navigate("/");
+        navigate("/upload-profile");
       } else {
         toast({ title: "Login failed. Please try again.", });
         

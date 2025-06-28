@@ -1,6 +1,6 @@
 import { Models } from "appwrite";
 import { Button } from "../ui"
-import { useFollowUser, useGetCurrentUserWithFollowing, useUnfollowUser } from "@/lib/react-query/queries";
+import { useFollowUser, useGetFollowingByUserId, useUnfollowUser } from "@/lib/react-query/queries";
 import { Loader } from ".";
 import { useUserContext } from "@/context/AuthContext";
 import { useState } from "react";
@@ -17,24 +17,26 @@ const FollowButton = ({ user }: FollowButtonProps) => {
   const { mutate: followUser, isPending: followPending  } = useFollowUser();
   const { mutate: unfollowUser, isPending: unFollowPending } = useUnfollowUser();
 
-  const { data: myFollowingUser, isLoading: isUserLoading, refetch: refetchFollowing } = useGetCurrentUserWithFollowing();
+  const { data: following, isLoading: isFollowingLoading, isError: isErrorFollowing, refetch: refetchFollowing } = useGetFollowingByUserId(currentUser.id);
 
-  const isFollowing = myFollowingUser?.following.includes(user.$id) || false;
+  const isFollowing = following?.some((oneFollowing: any) => oneFollowing?.toUsers?._id === user?._id) || false;
 
   
   const handleUnFollow = () => {
     if (!unFollowButtonClicked) {
-    unfollowUser({ userId: user.$id });
-    refetchFollowing()
-    setUnFollowButtonClicked(true);
+      setFollowButtonClicked(false);
+      unfollowUser({ userId: user._id, currentUserId: currentUser.id });
+      refetchFollowing()
+      setUnFollowButtonClicked(true);
     }
   };
 
   const handleFollow = () => {
     if (!followButtonClicked) {
-    followUser({ userId: user.$id, currentUserId: currentUser.id });
-    refetchFollowing()
-    setFollowButtonClicked(true);
+      setUnFollowButtonClicked(false);
+      followUser({ userId: user._id, currentUserId: currentUser.id });
+      refetchFollowing()
+      setFollowButtonClicked(true);
     }
   };
 
@@ -43,7 +45,7 @@ const FollowButton = ({ user }: FollowButtonProps) => {
     {
       isFollowing ? (
         <Button type="button" size="sm" className="shad-button_primary px-5" onClick={handleUnFollow} disabled={unFollowButtonClicked} >
-          {isUserLoading ? (
+          {isFollowingLoading ? (
             <div className="flex-center gap-2">
               <Loader /> Loading...
             </div>
@@ -57,7 +59,7 @@ const FollowButton = ({ user }: FollowButtonProps) => {
         </Button>
       ) : (
         <Button type="button" size="sm" className="shad-button_primary px-5" onClick={handleFollow} disabled={followButtonClicked} >
-          {isUserLoading ? (
+          {isFollowingLoading || followPending ? (
             <div className="flex-center gap-2">
               <Loader /> Loading...
             </div>

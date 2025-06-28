@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { IUser } from "@/types";
-import { getCurrentUser } from "@/lib/appwrite/api";
+import { getCurrentUser } from "@/lib/mongodb/api";
 
 export const INITIAL_USER = {
   id: "",
@@ -45,20 +45,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentAccount = await getCurrentUser();
       if (currentAccount) {
         setUser({
-          id: currentAccount.$id,
-          name: currentAccount.name,
-          username: currentAccount.username,
-          email: currentAccount.email,
-          imageUrl: currentAccount.imageUrl,
-          bio: currentAccount.bio,
+          id: currentAccount?._id,
+          name: currentAccount?.name,
+          username: currentAccount?.username,
+          email: currentAccount?.email,
+          imageUrl: currentAccount?.imageUrl,
+          bio: currentAccount?.bio,
+          followers: currentAccount?.followers,
         });
         setIsAuthenticated(true);
+        setIsLoading(false);
 
         return true;
       }
+      setIsLoading(false);
+      navigate("/sign-in");
 
       return false;
     } catch (error) {
+      setIsLoading(false);
       console.error(error);
       return false;
     } finally {
@@ -67,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const cookieFallback = localStorage.getItem("cookieFallback");
+    const cookieFallback = localStorage.getItem("token");
     if (
       cookieFallback === "[]" ||
       cookieFallback === null ||

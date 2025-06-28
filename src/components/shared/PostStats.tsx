@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { checkIsLiked } from "../../lib/utils";
-import { useDeleteSavedPost, useGetCurrentUser, useLikePost, useSavePost } from "../../lib/react-query/queries";
+import { useDeleteSavedPost, useGetCurrentUser, useGetSavedPosts, useLikePost, useSavePost } from "../../lib/react-query/queries";
 
 type PostStatsProps = {
   post: Models.Document;
@@ -12,7 +12,7 @@ type PostStatsProps = {
 
 const PostStats = ({ post, userId }: PostStatsProps) => {
   const location = useLocation();
-  const likesList = post.likes.map((user: Models.Document) => user.$id);
+  const likesList = post?.likes.map((user: Models.Document) => user?._id);
 
   const [likes, setLikes] = useState<string[]>(likesList);
   const [isSaved, setIsSaved] = useState(false);
@@ -20,11 +20,12 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   const { mutate: likePost } = useLikePost();
   const { mutate: savePost } = useSavePost();
   const { mutate: deleteSavePost } = useDeleteSavedPost();
+  const { data: savedPost, isLoading, isError, error, refetch } = useGetSavedPosts(userId);
 
   const { data: currentUser } = useGetCurrentUser();
 
-  const savedPostRecord = currentUser?.save.find(
-    (record: Models.Document) => record.post.$id === post.$id
+  const savedPostRecord = savedPost?.documents.find(
+    (record: Models.Document) => record.post._id === post._id
   );
 
   const handleShare = async () => {
@@ -63,7 +64,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
     }
 
     setLikes(likesArray);
-    likePost({ postId: post.$id, likesArray });
+    likePost({ postId: post._id, likesArray });
   };
 
   const handleSavePost = (
@@ -73,10 +74,10 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
 
     if (savedPostRecord) {
       setIsSaved(false);
-      return deleteSavePost(savedPostRecord.$id);
+      return deleteSavePost(savedPostRecord._id);
     }
 
-    savePost({ userId: userId, postId: post.$id });
+    savePost({ userId: userId, postId: post._id });
     setIsSaved(true);
   };
 
@@ -107,7 +108,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
           className="cursor-pointer"
         />
         <p className="small-medium lg:base-medium">{likes.length}</p>
-        <Link to={`/posts/${post.$id}`} className={`${containerStyles2} ${containerStyles3}`} >
+        <Link to={`/posts/${post._id}`} className={`${containerStyles2} ${containerStyles3}`} >
           <img
             src={"/assets/icons/comment.png"}
             alt="like"

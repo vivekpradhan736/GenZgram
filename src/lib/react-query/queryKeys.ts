@@ -16,6 +16,7 @@ export enum QUERY_KEYS {
     GET_FILE_PREVIEW = "getFilePreview",
   
     //  SEARCH KEYS
+    SEARCH_USERS = "getSearchUsers",
     SEARCH_POSTS = "getSearchPosts",
 
     // FOLLOW KEYS
@@ -23,9 +24,21 @@ export enum QUERY_KEYS {
     GET_FOLLOWING = "getFollowing",
     GET_CURRENT_USER_WITH_FOLLOWING = "getCurrentUserWithFollowing",
     GET_FOLLOWING_BY_USER_ID = "getFollowingByUserId",
+    GET_CURRENT_USER_WITH_FOLLOWERS = "getCurrentUserWithFollowers",
+
 
     // COMMENT KEYS
     CREATE_COMMENT = "createComment",
     GET_POST_COMMENT = "getPostComment",
-    GET_POST_COMMENT_BY_ID = "getPostCommentById"
+    GET_POST_COMMENT_BY_ID = "getPostCommentById",
+    
+    // CHAT KEYS
+    GET_CHAT = "getChat",
+    GET_ALL_MESSAGES = "getAllMessages",
+    CREATE_MESSAGE = "createMessage",
+
+    GET_RECENT_VIDEOS = "getRecentVideos",
+    GET_SAVED_VIDEOS = "getSavedVideos",
+
+    CHECK_PURCHASE = "checkPurchase",
   }

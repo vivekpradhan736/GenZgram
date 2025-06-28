@@ -5,6 +5,8 @@ import {
   useInfiniteQuery,
 } from "@tanstack/react-query";
 
+import { AxiosError } from "axios";
+
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import {
   createUserAccount,
@@ -31,8 +33,50 @@ import {
   getFollowingByUserId,
   createComment,
   getPostCommentById,
-} from "@/lib/appwrite/api";
-import { INewComment, INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
+  getSearchUsers,
+  createChat,
+  getAllMessages,
+  createMessage,
+  getCurrentUserWithFollowers,
+  uploadFile,
+  getSavedPosts,
+  uploadVideo,
+  getRecentVideos,
+  likeVideo,
+  saveVideo,
+  deleteSavedVideo,
+  getSavedVideos,
+  purchaseVideo,
+  checkVideoPurchase,
+  getChatsByUserId,
+} from "@/lib/mongodb/api";
+import { INewChat, INewComment, INewMessage, INewPost, INewUser, INewVideo, IUpdatePost, IUpdateUser } from "@/types";
+
+interface LikeVideoParams {
+  videoId: string;
+  likesArray: string[];
+}
+
+interface SaveVideoParams {
+  userId: string;
+  videoId: string;
+}
+
+interface UploadVideoError {
+  message: string;
+}
+
+export const useUploadFile = () => {
+  return useMutation({
+    mutationFn: uploadFile,
+    onSuccess: (data) => {
+      console.log("File uploaded successfully:", data);
+    },
+    onError: (error) => {
+      console.error("File upload failed:", error?.message);
+    },
+  });
+};
 
 export const useGetFollowingByUserId = (userId: string) => {
   return useQuery({
@@ -43,10 +87,18 @@ export const useGetFollowingByUserId = (userId: string) => {
 };
 
 // ============================== GET CURRENT USER WITH FOLLOWING
-export const useGetCurrentUserWithFollowing = () => {
+export const useGetCurrentUserWithFollowing = (userId: string) => {
   return useQuery({
-    queryKey: [QUERY_KEYS.GET_CURRENT_USER_WITH_FOLLOWING],
-    queryFn: getCurrentUserWithFollowing,
+    queryKey: [QUERY_KEYS.GET_CURRENT_USER_WITH_FOLLOWING, userId],
+    queryFn: () => getCurrentUserWithFollowing(userId),
+  });
+};
+
+// ============================== GET CURRENT USER WITH FOLLOWER
+export const useGetCurrentUserWithFollower = (userId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_CURRENT_USER_WITH_FOLLOWERS, userId],
+    queryFn: () => getCurrentUserWithFollowers(userId),
   });
 };
 
@@ -76,7 +128,7 @@ export const useFollowUser = () => {
 export const useUnfollowUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId }: { userId: string }) => unfollowUser(userId),
+    mutationFn: ({ userId, currentUserId }: { userId: string, currentUserId: string }) => unfollowUser(userId, currentUserId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_FOLLOWERS],
@@ -119,6 +171,7 @@ export const useGetPosts = () => {
   return useInfiniteQuery({
     queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
     queryFn: getInfinitePosts,
+    initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       // If there's no data, there are no more pages.
       if (lastPage && lastPage.documents.length === 0) {
@@ -126,7 +179,7 @@ export const useGetPosts = () => {
       }
 
       // Use the $id of the last document as the cursor.
-      const lastId = lastPage.documents[lastPage.documents.length - 1].$id;
+      const lastId = lastPage?.documents[lastPage.documents.length - 1]._id;
       return lastId;
     },
   });
@@ -176,6 +229,100 @@ export const useGetCommentById = (postId?: string) => {
 
 }
 
+// ============================================================
+// VIDEOS
+// ============================================================
+
+export const useUploadVideo = () => {
+  return useMutation<INewVideo, AxiosError<UploadVideoError>, FormData>({
+    mutationFn: uploadVideo,
+    onSuccess: (data) => {
+      console.log("Video uploaded successfully:", data);
+    },
+  });
+};
+
+export const useGetRecentVideos = () => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_RECENT_VIDEOS],
+    queryFn: getRecentVideos,
+  });
+};
+
+export const useLikeVideo = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ videoId, likesArray }: LikeVideoParams) =>
+      likeVideo(videoId, likesArray), // Call with params
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_RECENT_VIDEOS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_SAVED_VIDEOS],
+      });
+    },
+  });
+};
+
+export const useSaveVideo = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, videoId }: SaveVideoParams) =>
+      saveVideo(userId, videoId), // Call with params
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_SAVED_VIDEOS],
+      });
+    },
+  });
+};
+
+export const useDeleteSavedVideo = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteSavedVideo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_SAVED_VIDEOS],
+      });
+    },
+  });
+};
+
+export const useGetSavedVideos = (userId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_SAVED_VIDEOS, userId],
+    queryFn: () => getSavedVideos(userId),
+    enabled: !!userId,
+  });
+};
+
+// New purchase hooks
+export const usePurchaseVideo = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ videoId, userId }: { videoId: string; userId: string }) => purchaseVideo(videoId, userId),
+
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.CHECK_PURCHASE, variables.videoId],
+      });
+    },
+  });
+};
+
+
+export const useCheckVideoPurchase = (userId: string, videoId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.CHECK_PURCHASE, userId, videoId],
+    queryFn: () => checkVideoPurchase(userId, videoId),
+    enabled: !!userId && !!videoId,
+  });
+};
+
+
+
 export const useGetUserPosts = (userId?: string) => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_USER_POSTS, userId],
@@ -190,7 +337,7 @@ export const useUpdatePost = () => {
     mutationFn: (post: IUpdatePost) => updatePost(post),
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id],
+        queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?._id],
       });
     },
   });
@@ -221,7 +368,7 @@ export const useLikePost = () => {
     }) => likePost(postId, likesArray),
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id],
+        queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?._id],
       });
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
@@ -252,6 +399,14 @@ export const useSavePost = () => {
         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
       });
     },
+  });
+};
+
+export const useGetSavedPosts = (userId: string) => {
+  return useQuery({
+    queryKey: ["savedPosts", userId],
+    queryFn: () => getSavedPosts(userId),
+    enabled: !!userId
   });
 };
 
@@ -309,6 +464,14 @@ export const useGetUsers = (limit?: number) => {
   });
 };
 
+export const useGetSearchUsers = (searchTerm: string, currentUserId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.SEARCH_USERS, searchTerm, currentUserId],
+    queryFn: () => getSearchUsers(searchTerm, currentUserId),
+    enabled: Boolean(searchTerm && currentUserId),
+  });
+};
+
 export const useGetUserById = (userId: string) => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_USER_BY_ID, userId],
@@ -326,8 +489,53 @@ export const useUpdateUser = () => {
         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
       });
       queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_USER_BY_ID, data?.$id],
+        queryKey: [QUERY_KEYS.GET_USER_BY_ID, data?._id],
       });
     },
+  });
+};
+
+// ============================================================
+// CHAT QUERIES
+// ============================================================
+
+export const useCreateChat = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (chat: INewChat) => createChat(chat),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+      queryKey: [QUERY_KEYS.GET_CHAT],
+      });
+    },
+  });
+}
+
+// GET all chats by user ID
+export const useGetChatsByUserId = (userId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_CHAT, userId],
+    queryFn: () => getChatsByUserId(userId),
+    enabled: !!userId, // ensures the query doesn't run if userId is undefined/null
+  });
+};
+
+export const useCreateMessage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (message: INewMessage) => createMessage(message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+      queryKey: [QUERY_KEYS.CREATE_MESSAGE],
+      });
+    },
+  });
+}
+
+export const useGetAllMessagesByChatId = (chatId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_ALL_MESSAGES, chatId],
+    queryFn: () => getAllMessages(chatId),
+    enabled: !!chatId,
   });
 };

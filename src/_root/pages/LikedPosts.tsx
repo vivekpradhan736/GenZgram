@@ -1,8 +1,10 @@
 import { GridPostList, Loader } from "../../components/shared";
-import { useGetCurrentUser } from "../../lib/react-query/queries";
+import { useGetCurrentUser, useGetRecentPosts } from "../../lib/react-query/queries";
 
 const LikedPosts = () => {
   const { data: currentUser } = useGetCurrentUser();
+  const { data: posts, isLoading: isPostLoading, isError: isErrorPosts } = useGetRecentPosts();
+  const likedPosts = posts?.documents?.filter((post: any) => post.likes.some((user: any) => user._id === currentUser._id));
 
   if (!currentUser)
     return (
@@ -13,11 +15,11 @@ const LikedPosts = () => {
 
   return (
     <>
-      {currentUser.liked.length === 0 && (
+      {/* {likedPosts?.length === 0 && (
         <p className="text-light-4">No liked posts</p>
-      )}
+      )} */}
 
-      <GridPostList posts={currentUser.liked} showStats={false} />
+      <GridPostList posts={likedPosts} showStats={false} />
     </>
   );
 };

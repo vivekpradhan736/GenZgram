@@ -8,3 +8,7 @@ export { default as UserCard } from "./UserCard";
 export { default as FileUploader } from "./FileUploader";
 export { default as ProfileUploader } from "./ProfileUploader";
 export { default as PostStats } from "./PostStats";
+export { default as ProfileCard } from "./ProfileCard";
+export { default as Chatbox } from "./Chatbox";
+export { default as MyChats } from "./MyChats";
+export { default as ScrollableChat } from "./ScrollableChat";

@@ -19,9 +19,24 @@ const GridPostList = ({
 
   return (
     <ul className="grid-container">
-      {posts.map((post) => (
-        <li key={post.$id} className="relative min-w-80 h-80">
-          <Link to={`/posts/${post.$id}`} className="grid-post_link">
+      {!posts ||  posts?.length <= 0 ? (
+        <li className="col-span-full flex justify-center items-center w-full h-full">
+      <div className="flex flex-col justify-center items-center">
+        <img
+          src={"/assets/illustrations/noFile.png"}
+          alt="back"
+          width={400}
+          height={400}
+        />
+        <h1 className="text-lg font-mono">No Data</h1>
+      </div>
+    </li>
+      ) : (
+        <>
+        {
+        posts?.map((post) => (
+        <li key={post._id} className="relative min-w-80 h-80">
+          <Link to={`/posts/${post._id}`} className="grid-post_link">
             <img
               src={post.imageUrl}
               alt="post"
@@ -46,7 +61,10 @@ const GridPostList = ({
             {showStats && <PostStats post={post} userId={user.id} />}
           </div>
         </li>
-      ))}
+      ))
+    }
+      </>
+    )}
     </ul>
   );
 };

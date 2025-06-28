@@ -27,11 +27,11 @@ const Comment = ({ post, user, refetchComment }: PostStatsProps) => {
     // Query
     const { mutateAsync: createComment, isPending } = useCreateComment();
 
-    const handleSignup = async (value: z.infer<typeof CommentValidation>) => {
+    const handleCreateComment = async (value: z.infer<typeof CommentValidation>) => {
         const newPost = await createComment({
             ...value,
             userId: user.id,
-            postId: post.$id,
+            postId: post._id,
         });
 
         if (newPost) {
@@ -42,11 +42,13 @@ const Comment = ({ post, user, refetchComment }: PostStatsProps) => {
           }
     }
 
+    const commentText = form.watch("text");
+
     return (
         <div className="w-full" >
             <Form {...form}>
                 <form
-                    onSubmit={form.handleSubmit(handleSignup)}
+                    onSubmit={form.handleSubmit(handleCreateComment)}
                     className="flex justify-between items-center gap-2 w-[100%] mt-2">
                     <FormField
                         control={form.control}
@@ -56,7 +58,7 @@ const Comment = ({ post, user, refetchComment }: PostStatsProps) => {
                         )}
                     />
                     {isPending ? (<Loader />) : ""}
-                    <Button type="submit" className="w-[10%] hover:text-[#877eff]">
+                    <Button type="submit" className="w-[10%] text-[#877eff] hover:text-[#ffffff] hover:bg-[#877eff]" disabled={commentText.length <= 0} >
                         {/* {isCreatingAccount || isSigningInUser || isUserLoading ? ( */}
                         {/* <div className="flex-center gap-2"> */}
                         {/* <Loader /> Loading... */}

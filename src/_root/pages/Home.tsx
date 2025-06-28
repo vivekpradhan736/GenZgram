@@ -2,20 +2,16 @@ import { Models } from "appwrite";
 
 import { Loader, PostCard, UserCard } from "../../components/shared";
 import { useGetRecentPosts, useGetUsers } from "../../lib/react-query/queries";
+import { useUserContext } from "@/context/AuthContext";
 
 const Home = () => {
   // const { toast } = useToast();
+  const { user } = useUserContext();
 
-  const {
-    data: posts,
-    isLoading: isPostLoading,
-    isError: isErrorPosts,
-  } = useGetRecentPosts();
-  const {
-    data: creators,
-    isLoading: isUserLoading,
-    isError: isErrorCreators,
-  } = useGetUsers(10);
+  const { data: posts, isLoading: isPostLoading, isError: isErrorPosts } = useGetRecentPosts();
+  const { data: creators, isLoading: isUserLoading, isError: isErrorCreators } = useGetUsers(10);
+
+  const filteredCreators = creators?.documents.filter((creator: any) => creator?._id !== user?.id);
 
   if (isErrorPosts || isErrorCreators) {
     return (
@@ -40,7 +36,7 @@ const Home = () => {
           ) : (
             <ul className="flex flex-col flex-1 gap-9 w-full ">
               {posts?.documents.map((post: Models.Document) => (
-                <li key={post.$id} className="flex justify-center w-full">
+                <li key={post._id} className="flex justify-center w-full">
                   <PostCard post={post} />
                 </li>
               ))}
@@ -55,8 +51,8 @@ const Home = () => {
           <Loader />
         ) : (
           <ul className="grid 2xl:grid-cols-2 gap-6">
-            {creators?.documents.map((creator) => (
-              <li key={creator?.$id}>
+            {filteredCreators?.map((creator:any) => (
+              <li key={creator?._id}>
                 <UserCard user={creator} />
               </li>
             ))}

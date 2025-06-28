@@ -1,7 +1,7 @@
 import { ID, Query } from "appwrite";
 
 import { appwriteConfig, account, databases, storage, avatars } from "./config";
-import { IUpdatePost, INewPost, INewUser, IUpdateUser, INewComment } from "@/types";
+import { IUpdatePost, INewPost, INewUser, IUpdateUser, INewComment, INewChat, INewMessage } from "@/types";
 
 // ============================== GET FOLLOWING BY USER ID
 export async function getFollowingByUserId(userId: string) {
@@ -12,12 +12,10 @@ export async function getFollowingByUserId(userId: string) {
       appwriteConfig.followingCollectionId,
       [Query.equal("toUsers", userId)]
     );
-    console.log("user-user",user)
 
     const followingUsers = user?.documents.filter(
       (followedUser) => followedUser.byUser.$id === currentAccount?.$id
     );
-    console.log("followingUsers",followingUsers)
 
 
     if (!followingUsers) throw Error;
@@ -99,7 +97,6 @@ export async function followUser(userId: string, currentUserId: string) {
 export async function unfollowUser(userId: string) {
   try {
     const userFollowingCollection = await getFollowingByUserId(userId);
-    console.log("userFollowingCollection",userFollowingCollection)
 
     if (userFollowingCollection && userFollowingCollection.length > 0) {
       // Assuming userId is the document ID to be deleted from the following collection
@@ -609,6 +606,26 @@ export async function getUsers(limit?: number) {
   }
 }
 
+// ============================== GET SEARCH USERS
+export async function getSearchUsers(searchTerm: string, currentUserId: string) {
+  try {
+    const users = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      [
+        Query.search("username", searchTerm), // Search for the username
+        Query.notEqual("$id", currentUserId) // Exclude the current user by userId
+      ]
+    );
+
+    if (!users) throw Error("No users found");
+
+    return users;
+  } catch (error) {
+    console.error("Error fetching search users:", error);
+  }
+}
+
 // ============================== GET USER BY ID
 export async function getUserById(userId: string) {
   try {
@@ -679,6 +696,112 @@ export async function updateUser(user: IUpdateUser) {
     }
 
     return updatedUser;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// ==============================  CREATE CHAT
+export async function createChat(chat: INewChat) {
+  try {
+    // Step 1: Generate a unique hash for the users
+    const usersArray = Array.isArray(chat.users)
+      ? [chat.currentUserId, ...chat.users]
+      : [chat.currentUserId, chat.users];
+
+    const usersHash = usersArray.sort().join(","); // Sort and join to maintain uniqueness
+
+    // Step 2: Check if a chat with the same usersHash exists
+    const existingChats = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.chatsCollectionId,
+      [Query.equal("usersHash", usersHash)]
+    );
+
+    // Step 3: If chat exists, return it
+    if (existingChats.total > 0) {
+      return existingChats.documents[0];
+    }
+
+    // Step 4: Validate User IDs
+    for (const userId of usersArray) {
+      const user = await databases.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.userCollectionId,
+        userId
+      );
+      if (!user) {
+        throw new Error(`User with ID ${userId} does not exist.`);
+      }
+    }
+
+    // Step 5: Create a new chat with the users relationship
+    const newChat = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.chatsCollectionId,
+      ID.unique(),
+      {
+        chatName: chat.chatName,
+        users: usersArray, // Ensure users are valid IDs
+        usersHash: usersHash, // Save the hash for querying
+        isGroupChat: false,
+        usersId: chat.usersId,
+      }
+    );
+
+    if (!newChat) throw new Error("Failed to create chat");
+
+    return newChat;
+  } catch (error) {
+    console.error("Error creating chat:", error);
+    throw error;
+  }
+}
+
+export async function createMessage(message: INewMessage) {
+  console.log("message",message)
+  try {
+    // Step 1: Create a new message document
+    const newMessageResponse = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.messagesCollectionId,
+      ID.unique(), // Generates a unique ID for the new document
+      {
+        content: message.content,
+        sender: message.sender, // Replace with the logged-in user ID
+        chat: message.chat, // Reference to the current chat
+        timestamp: message.timestamp,
+      }
+    );
+    console.log("newMessageResponse.$id",newMessageResponse)
+
+    // Step 2: Update the "Chats" collection with the new latestMessage ID
+    const chatDocumentId = message.chat; // The specific chat document to update
+
+    await databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.chatsCollectionId,
+      chatDocumentId,
+      {
+        latestMessage: newMessageResponse.$id, // Set latestMessage to the new message ID
+      }
+    );
+    console.log('Message created and chat updated successfully!');
+  } catch (error) {
+    console.error('Error sending message:', error);
+  }
+}
+
+export async function getAllMessages() {
+  try {
+    const messages = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.messagesCollectionId,
+    );
+
+    if (!messages) throw Error;
+
+    return messages;
   } catch (error) {
     console.log(error);
   }
